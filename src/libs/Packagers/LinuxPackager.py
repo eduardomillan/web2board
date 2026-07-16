@@ -30,6 +30,7 @@ class LinuxPackager(Packager):
 
         self.package_debian_metadata_path = join(self.installer_creation_path, "DEBIAN")
         self.debian_metadata_path = join(self.pkg_platform_path, "debian")
+        self.dist_folder = join(self.web2board_path, "dist")
         with open(self.packager_res_path + os.sep + "Web2Board-template.desktop") as desktopFile:
             self.Web2BoardDesktopTemplate = desktopFile.read()
 
@@ -49,6 +50,33 @@ class LinuxPackager(Packager):
     def _move_deb_to_installer_path(self):
         resulting_deb = self.web2board_path + os.sep + self.installer_creation_name + ".deb"
         shutil.move(resulting_deb, self.installer_path + os.sep + "web2board.deb")
+        if not os.path.exists(self.dist_folder):
+            os.makedirs(self.dist_folder)
+        shutil.copy(self.installer_path + os.sep + "web2board.deb",
+                     join(self.dist_folder, "web2board_{}_{}.deb".format(self.architecture, self.version)))
+        log.info("deb copied to dist/")
+
+    def _create_zip_in_dist(self):
+        zip_name = "web2board-{}-linux-{}.zip".format(self.version, self.architecture)
+        zip_path = join(self.dist_folder, zip_name)
+        if not os.path.exists(self.dist_folder):
+            os.makedirs(self.dist_folder)
+        dist_path = self.installer_creation_dist_path
+        items = ["web2board", "web2boardLink", "res"]
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+            for item in items:
+                item_path = join(dist_path, item)
+                if not os.path.exists(item_path):
+                    continue
+                if os.path.isfile(item_path):
+                    z.write(item_path, item)
+                else:
+                    for root, dirs, files in os.walk(item_path):
+                        for f in files:
+                            file_path = join(root, f)
+                            arcname = os.path.relpath(file_path, dist_path)
+                            z.write(file_path, arcname)
+        log.info("zip created at dist/%s", zip_name)
 
     def _create_linux_installer(self):
         installer_files = ["web2board_installer.py", "web2board_installer.spec"]
@@ -80,6 +108,8 @@ class LinuxPackager(Packager):
             os.system("chmod -R 777 " + self.installer_creation_dist_path)
             call(["dpkg-deb", "--build", self.installer_creation_path])
             self._move_deb_to_installer_path()
+            log.info("Creating zip in dist/")
+            self._create_zip_in_dist()
             log.info("Creating Linux installer")
             self._create_linux_installer()
             log.info("installer created successfully")
