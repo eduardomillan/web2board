@@ -1,3 +1,12 @@
+web2board (3.0.1) trusty; urgency=medium
+
+  * Fix unhandled exception in asynchronous task when no board is connected.
+    SerialMonitorHub.find_board_port now returns a BOARD_NOT_READY reply
+    instead of raising CompilerException, and get_available_ports returns an
+    empty list on error. Avoids the "No port found" traceback in the console.
+
+ -- bitbloq Team <support-bitbloq@bq.com>  Thu, 16 Jul 2026 00:00:00 +0100
+
 web2board (2.1.1) trusty; urgency=medium
 
   * Initial release.

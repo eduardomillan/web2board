@@ -16,6 +16,7 @@ web2board.egg-info/
 bin/
 include/
 src/res/
+.venv27/
 *_web2board_*
 installers/
 **/*.log

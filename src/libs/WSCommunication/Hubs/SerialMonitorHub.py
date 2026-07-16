@@ -5,9 +5,9 @@ import serial
 import time
 
 from wshubsapi.connected_clients_group import ConnectedClientsGroup
-from wshubsapi.hub import Hub
+from wshubsapi.hub import Hub, UnsuccessfulReplay
 
-from libs.CompilerUploader import CompilerUploader
+from libs.CompilerUploader import CompilerException, CompilerUploader
 from libs.Decorators.Asynchronous import asynchronous
 from libs.PathsManager import PathsManager
 
@@ -114,10 +114,17 @@ class SerialMonitorHub(Hub):
         self.clients.get_subscribed_clients().baudrate_changed(port, baudrate)
 
     def get_available_ports(self):
-        return CompilerUploader.construct().get_available_ports()
+        try:
+            return CompilerUploader.construct().get_available_ports()
+        except Exception as e:
+            log.warning("Error getting available ports: {}".format(e))
+            return []
 
     def find_board_port(self, board):
-        return CompilerUploader.construct(board).get_port()
+        try:
+            return CompilerUploader.construct(board).get_port()
+        except CompilerException as e:
+            return self._construct_unsuccessful_replay(dict(title="BOARD_NOT_READY", stdErr=e.message))
 
     def is_port_connected(self, port):
         return port in self.serial_connections and not self.serial_connections[port].is_closed()

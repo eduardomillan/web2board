@@ -1,5 +1,6 @@
 import unittest
 
+from wshubsapi.hub import UnsuccessfulReplay
 from wshubsapi.hubs_inspector import HubsInspector
 from wshubsapi.test.utils.hubs_utils import remove_hubs_subclasses
 
@@ -10,6 +11,7 @@ import libs.WSCommunication.Hubs
 
 from flexmock import flexmock, flexmock_teardown
 
+from libs.CompilerUploader import CompilerException
 from libs.WSCommunication.Hubs.SerialMonitorHub import SerialMonitorHub
 
 
@@ -52,3 +54,28 @@ class TestSerialMonitorHub(unittest.TestCase):
         clientsHolder.get_subscribed_clients().should_receive("baudrate_changed").once()
 
         self.serialMonitorHub.change_baudrate(port, baudrate)
+
+    def test_findBoardPort_returnsPortWhenBoardConnected(self):
+        port = "COM4"
+        self.compileUploaderMock.should_receive("get_port").and_return(port).once()
+
+        result = self.serialMonitorHub.find_board_port("bt328")
+
+        self.assertEqual(result, port)
+
+    def test_findBoardPort_returnsUnsuccessfulReplayWhenNoPortFound(self):
+        self.compileUploaderMock.should_receive("get_port").and_raise(
+            CompilerException, {"code": 2, "message": "No port found, check the board: \"{0}\" is connected"}, "bt328").once()
+
+        result = self.serialMonitorHub.find_board_port("bt328")
+
+        self.assertIsInstance(result, UnsuccessfulReplay)
+        self.assertEqual(result.reply["title"], "BOARD_NOT_READY")
+
+    def test_getAvailablePorts_returnsEmptyListWhenCompilerFails(self):
+        self.compileUploaderMock.should_receive("get_available_ports").and_raise(Exception).once()
+
+        result = self.serialMonitorHub.get_available_ports()
+
+        self.assertEqual(result, [])
+
