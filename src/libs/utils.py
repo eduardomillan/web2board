@@ -109,7 +109,39 @@ def list_serial_ports(ports_filter=None):
         ports = filter(ports_filter, ports)
     if is_mac():
         ports = ports + [[x] for x in glob('/dev/tty.*') if x not in map(lambda x: x[0], ports)]
+    elif is_linux():
+        # On Linux, boards appear as /dev/ttyUSB* or /dev/ttyACM* (and legacy
+        # /dev/ttyS*). Some PySerial builds do not enumerate them via
+        # comports() on modern systems, so add them explicitly.
+        linux_glob = glob('/dev/ttyUSB*') + glob('/dev/ttyACM*') + glob('/dev/ttyS*')
+        ports = ports + [[x] for x in linux_glob if x not in map(lambda x: x[0], ports)]
     return list(ports)
+
+
+def which(cmd):
+    for path_dir in os.environ.get("PATH", "").split(os.pathsep):
+        full = os.path.join(path_dir, cmd)
+        if os.path.isfile(full) and os.access(full, os.X_OK):
+            return full
+    return None
+
+
+def find_avrdude(bundled_path=None):
+    system_path = which("avrdude")
+    if system_path:
+        return system_path
+    if bundled_path and os.path.isfile(bundled_path):
+        return bundled_path
+    return None
+
+
+def find_avrdude_conf(bundled_path=None):
+    system_conf = "/etc/avrdude.conf"
+    if os.path.isfile(system_conf):
+        return system_conf
+    if bundled_path and os.path.isfile(bundled_path):
+        return bundled_path
+    return None
 
 
 def is_linux():

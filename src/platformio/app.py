@@ -49,12 +49,6 @@ DEFAULT_SETTINGS = {
         "description": "Automatically update libraries (Yes/No)",
         "value": False
     },
-    "enable_telemetry": {
-        "description": (
-            "Telemetry service <http://docs.platformio.org/en/latest/"
-            "userguide/cmd_settings.html?#enable-telemetry> (Yes/No)"),
-        "value": True
-    },
     "enable_prompts": {
         "description": (
             "Can PlatformIO communicate with you via prompts: "

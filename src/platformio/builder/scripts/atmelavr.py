@@ -16,7 +16,8 @@
     Builder for Atmel AVR series of microcontrollers
 """
 
-from os.path import join
+from os import access, F_OK, X_OK
+from os.path import join, isfile
 from time import sleep
 
 from SCons.Script import (COMMAND_LINE_TARGETS, AlwaysBuild, Default,
@@ -86,13 +87,26 @@ if "digispark" in env.get(
     )
 
 else:
+    bundled_avrdude = join("$PIOPACKAGES_DIR", "tool-avrdude", "avrdude")
+    bundled_conf = join("$PIOPACKAGES_DIR", "tool-avrdude", "avrdude.conf")
+
+    system_avrdude = "/usr/bin/avrdude"
+    system_conf = "/etc/avrdude.conf"
+
+    if isfile(system_avrdude) and access(system_avrdude, X_OK):
+        avrdude_path = system_avrdude
+        avrdude_conf = system_conf if isfile(system_conf) else bundled_conf
+    else:
+        avrdude_path = bundled_avrdude
+        avrdude_conf = bundled_conf
+
     env.Replace(
-        UPLOADER=join("$PIOPACKAGES_DIR", "tool-avrdude", "avrdude"),
+        UPLOADER=avrdude_path,
         UPLOADERFLAGS=[
             "-v",
             "-p", "$BOARD_MCU",
             "-C",
-            '"%s"' % join("$PIOPACKAGES_DIR", "tool-avrdude", "avrdude.conf"),
+            '"%s"' % avrdude_conf,
             "-c", "$UPLOAD_PROTOCOL"
         ],
         UPLOADHEXCMD='"$UPLOADER" $UPLOADERFLAGS -D -U flash:w:$SOURCES:i',

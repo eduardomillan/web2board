@@ -21,7 +21,7 @@ from time import time
 
 import click
 
-from platformio import __version__, app, exception, telemetry
+from platformio import __version__, app, exception
 from platformio.commands.lib import lib_update as cmd_libraries_update
 from platformio.commands.platforms import \
     platforms_install as cmd_platforms_install
@@ -37,8 +37,6 @@ def on_platformio_start(ctx, force, caller):
     app.set_session_var("command_ctx", ctx)
     app.set_session_var("force_option", force)
     app.set_session_var("caller_id", caller)
-    telemetry.on_command()
-
     # skip any check operations when upgrade command
     ctx_args = ctx.args or []
     if ctx_args and (ctx.args[0] == "upgrade" or "--json-output" in ctx_args):
@@ -60,7 +58,7 @@ def on_platformio_end(ctx, result):  # pylint: disable=W0613
 
 
 def on_platformio_exception(e):
-    telemetry.on_exception(e)
+    pass
 
 
 class Upgrader(object):
@@ -164,8 +162,6 @@ def after_upgrade(ctx):
         click.secho("PlatformIO has been successfully upgraded to %s!\n" %
                     __version__, fg="green")
 
-        telemetry.on_event(category="Auto", action="Upgrade",
-                           label="%s > %s" % (last_version, __version__))
     else:
         raise exception.UpgradeError("Auto upgrading...")
     click.echo("")
@@ -245,9 +241,6 @@ def check_internal_updates(ctx, what):
         elif what == "libraries":
             ctx.invoke(cmd_libraries_update)
         click.echo()
-
-        telemetry.on_event(category="Auto", action="Update",
-                           label=what.title())
 
     click.echo("*" * terminal_width)
     click.echo("")

@@ -76,16 +76,22 @@ class CompilerUploader:
     @staticmethod
     def _call_avrdude(args):
         if utils.is_windows():
-            avr_exe_path = os.path.join(pm.RES_PATH, 'avrdude.exe')
-            avr_config_path = os.path.join(pm.RES_PATH, 'avrdude.conf')
+            bundled_exe = os.path.join(pm.RES_PATH, 'avrdude.exe')
+            bundled_conf = os.path.join(pm.RES_PATH, 'avrdude.conf')
         elif utils.is_mac():
-            avr_exe_path = os.path.join(pm.RES_PATH, 'avrdude')
-            avr_config_path = os.path.join(pm.RES_PATH, 'avrdude.conf')
+            bundled_exe = os.path.join(pm.RES_PATH, 'avrdude')
+            bundled_conf = os.path.join(pm.RES_PATH, 'avrdude.conf')
         elif utils.is_linux():
-            avr_exe_path = os.path.join(pm.RES_PATH, 'avrdude64' if utils.is64bits() else "avrdude")
-            avr_config_path = os.path.join(pm.RES_PATH, 'avrdude.conf' if utils.is64bits() else "avrdude32.conf")
+            bundled_exe = os.path.join(pm.RES_PATH, 'avrdude64' if utils.is64bits() else "avrdude")
+            bundled_conf = os.path.join(pm.RES_PATH, 'avrdude.conf' if utils.is64bits() else "avrdude32.conf")
         else:
             raise Exception("Platform not supported")
+
+        avr_exe_path = utils.find_avrdude(bundled_exe)
+        avr_config_path = utils.find_avrdude_conf(bundled_conf)
+
+        if not avr_exe_path:
+            raise Exception("avrdude not found. Install it with: sudo apt install avrdude")
 
         os.chmod(avr_exe_path, int("755", 8))  # force to have executable rights in avrdude
 
@@ -160,7 +166,13 @@ class CompilerUploader:
         return None
 
     def get_available_ports(self):
-        ports_to_upload = utils.list_serial_ports(lambda x: x[2] != "n/a")
+        # On Linux, USB serial ports (/dev/ttyUSB*, /dev/ttyACM*) often report
+        # an "n/a" description, so the generic "n/a" filter would drop them.
+        # Accept any port on Linux; keep the original filter elsewhere.
+        if utils.is_linux():
+            ports_to_upload = utils.list_serial_ports()
+        else:
+            ports_to_upload = utils.list_serial_ports(lambda x: x[2] != "n/a")
         available_ports = map(lambda x: x[0], ports_to_upload)
         return sorted(available_ports, cmp=lambda x, y: -1 if x == self.lastPortUsed else 1)
 

@@ -21,7 +21,7 @@ from time import time
 
 import click
 
-from platformio import app, exception, telemetry, util
+from platformio import app, exception, util
 from platformio.commands.lib import lib_install as cmd_lib_install
 from platformio.libmanager import LibraryManager
 from platformio.platforms.base import PlatformFactory
@@ -176,8 +176,6 @@ class EnvironmentProcessor(object):
         platform = self.options['platform']
         build_vars = self._get_build_variables()
         build_targets = self._get_build_targets()
-
-        telemetry.on_run_environment(self.options, build_targets)
 
         # install dependent libraries
         if "lib_install" in self.options:

@@ -20,7 +20,7 @@ from time import time
 import click
 import requests
 
-from platformio import exception, telemetry, util
+from platformio import exception, util
 from platformio.app import get_state_item, set_state_item
 from platformio.downloader import FileDownloader
 from platformio.unpacker import FileUnpacker
@@ -115,9 +115,6 @@ class PackageManager(object):
         # remove archive
         remove(dlpath)
 
-        telemetry.on_event(
-            category="PackageManager", action="Install", label=name)
-
     def uninstall(self, name):
         click.echo("Uninstalling %s package: \t" %
                    click.style(name, fg="cyan"), nl=False)
@@ -129,10 +126,6 @@ class PackageManager(object):
         rmtree(join(self._package_dir, name))
         self._unregister(name)
         click.echo("[%s]" % click.style("OK", fg="green"))
-
-        # report usage
-        telemetry.on_event(
-            category="PackageManager", action="Uninstall", label=name)
 
     def update(self, name):
         click.echo("Updating %s package:" % click.style(name, fg="yellow"))
@@ -152,9 +145,6 @@ class PackageManager(object):
 
         self.uninstall(name)
         self.install(name)
-
-        telemetry.on_event(
-            category="PackageManager", action="Update", label=name)
 
     def _register(self, name, version):
         data = self.get_installed()
